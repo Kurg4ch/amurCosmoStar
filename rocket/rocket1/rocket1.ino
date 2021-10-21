@@ -7,6 +7,7 @@
 
 #define tune_pin A1       // пин пьезлэлемента
 #define ten_but_pin A3    // пин кнопки 10 минутного отсчета
+#define set_channel_but A8  // пин кнопки для смены канала связи
 #define photo_pin A0      // пин фоторезистора
 #define servo_space_air_pin 9 // пин сервопривода на выпуск парашюта
 #define set_channel_pin 7     // пин смены радиоканала
@@ -22,6 +23,8 @@ bool parachute_opened = false;      // бул для хранения значе
 bool exit_save_height = false;      // вышли ли мы из безопасной зоны
 bool on_air = false;                // бул для хранение значения о том в полете мы или нет
 bool a = false;
+bool channel = false;               // true - 1 канал, false - 2 канал
+
 
 unsigned long save_height;          // время с момента запуска когда мы продолели безопасную зону
 unsigned long click_millis;         // время запуска ракеты
@@ -47,11 +50,11 @@ void setup() {
 
 
   if (imu_connection and SD.begin(4)) {
-    Serial.print("ALL WORKING");
+    Serial1.print("W");
     tone(tune_pin, 100);
-    digitalWrite(10, HIGH);
+    digitalWrite(channel_led_pin, HIGH);
     delay(1000);
-    digitalWrite(10, LOW);
+    digitalWrite(channel_led_pin, LOW);
     noTone(A1);
   }
 }
@@ -94,6 +97,23 @@ void loop() {
   photo_value = analogRead(A0);
   Serial.println(photo_value);
 
+  digitalWrite(channel_led_pin, channel);
+
+  if(on_air == false){
+
+  if(digitalRead(set_channel_but)){
+    channel = !channel;
+    digitalWrite(set_channel_pin, LOW);
+    delay(40);
+      if(channel)
+      Serial1.write("AT+C001");
+      if(!channel)
+      Serial1.write("AT+C100");
+    digitalWrite(set_channel_pin, HIGH);
+    }
+   
+  }
+
   if (photo_value > max_value and on_air == true and parachute_opened == false) {
     
     if (a == false){
@@ -112,7 +132,6 @@ void loop() {
         Servo1.detach();
         delay(15);
       }
-
     }
 
   }
